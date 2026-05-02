@@ -1330,6 +1330,14 @@ function updateStatusBox() {
     `;
 }
 setInterval(updateStatusBox, 300);
+document.getElementById("btn-save").onclick = () => {
+    saveGame();
+};
+
+document.getElementById("btn-load").onclick = () => {
+    loadGame();
+};
+
 // =======================
 // セーブ
 // =======================
