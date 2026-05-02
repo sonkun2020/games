@@ -169,3 +169,14 @@ pre {
     background: #000;
     opacity: 0.4;
 }
+/* Dragon％100％で光る */
+.skill.ready {
+    box-shadow: 0 0 15px 5px rgba(255, 80, 0, 0.9);
+    border-color: #ff5500;
+}
+
+/* Dragonモード中は赤く光る */
+.skill.dragon {
+    box-shadow: 0 0 20px 8px rgba(255, 0, 0, 1);
+    border-color: #ff0000;
+}
