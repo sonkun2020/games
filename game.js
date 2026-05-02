@@ -668,6 +668,37 @@ if (currentTarget) {
 } else {
     document.getElementById("enemy-hp").style.width = "0px";
 }
+// =======================
+// スキルアイコンのCT表示
+// =======================
+function updateSkillIcons(now) {
+    const w = weapons[player.weaponId];
+
+    // スキル1
+    const s1 = document.getElementById("skill1");
+    if (w.skills[0]._nextUse && now < w.skills[0]._nextUse) {
+        s1.classList.add("cooldown");
+    } else {
+        s1.classList.remove("cooldown");
+    }
+
+    // スキル2
+    const s2 = document.getElementById("skill2");
+    if (w.skills[1]._nextUse && now < w.skills[1]._nextUse) {
+        s2.classList.add("cooldown");
+    } else {
+        s2.classList.remove("cooldown");
+    }
+
+    // スキル3
+    const s3 = document.getElementById("skill3");
+    if (w.skills[2]._nextUse && now < w.skills[2]._nextUse) {
+        s3.classList.add("cooldown");
+    } else {
+        s3.classList.remove("cooldown");
+    }
+}
+updateSkillIcons(now);
 
 }
 
@@ -1086,3 +1117,17 @@ function pvpWin() {
 
     log("敵プレイヤーが復活した！");
 }
+document.getElementById("skill1").onclick = () => {
+    keys["j"] = true;
+    setTimeout(() => keys["j"] = false, 50);
+};
+
+document.getElementById("skill2").onclick = () => {
+    keys["l"] = true;
+    setTimeout(() => keys["l"] = false, 50);
+};
+
+document.getElementById("skill3").onclick = () => {
+    keys[";"] = true;
+    setTimeout(() => keys[";"] = false, 50);
+};
