@@ -1287,3 +1287,46 @@ function playSE(id) {
     se.currentTime = 0;
     se.play();
 }
+// メニュー開閉
+document.getElementById("btn-open-menu").onclick = () => {
+    document.getElementById("menu").style.display = "block";
+};
+
+document.getElementById("btn-close-menu").onclick = () => {
+    document.getElementById("menu").style.display = "none";
+};
+
+// ゲーム開始
+document.getElementById("btn-start").onclick = () => {
+    document.getElementById("menu").style.display = "none";
+    log("ゲーム開始！");
+};
+
+// 武器変更
+document.getElementById("weapon-select").onchange = (e) => {
+    player.weaponId = Number(e.target.value);
+    log("武器を変更した！");
+};
+
+// 音ON/OFF
+let soundOn = true;
+document.getElementById("btn-sound").onclick = () => {
+    soundOn = !soundOn;
+    document.getElementById("btn-sound").textContent = "音：" + (soundOn ? "ON" : "OFF");
+
+    // 全SEの音量を変更
+    const sounds = document.querySelectorAll("audio");
+    sounds.forEach(se => se.volume = soundOn ? 1 : 0);
+};
+
+// ステータス表示更新
+function updateStatusBox() {
+    const box = document.getElementById("status-box");
+    box.innerHTML = `
+        HP: ${player.hp} / ${player.maxHp}<br>
+        ATK: ${player.atk}<br>
+        DEF: ${player.def}<br>
+        Dragon％: ${player.dragonPercent}
+    `;
+}
+setInterval(updateStatusBox, 300);
