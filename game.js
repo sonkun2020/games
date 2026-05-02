@@ -183,20 +183,43 @@ const enemyTemplate = {
 let map = [];
 
 function generateMap() {
-  map = [];
-  for (let y = 0; y < MAP_ROWS; y++) {
-    const row = [];
-    for (let x = 0; x < MAP_COLS; x++) {
-      // 左側：草原 ／ 右側：街
-      if (x < MAP_COLS / 2) {
-        row.push(TILE_TYPE.GRASS);
-      } else {
-        row.push(TILE_TYPE.CITY);
-      }
+    map = [];
+
+    for (let y = 0; y < MAP_ROWS; y++) {
+        const row = [];
+
+        for (let x = 0; x < MAP_COLS; x++) {
+
+            // 左側70% → 草原
+            if (x < MAP_COLS * 0.7) {
+                row.push(TILE_TYPE.GRASS);
+            }
+
+            // 右側30% → 街
+            else {
+                row.push(TILE_TYPE.CITY);
+            }
+        }
+
+        map.push(row);
     }
-    map.push(row);
-  }
+
+    // 街にビル（障害物）を配置
+    for (let i = 0; i < 40; i++) {
+        const bx = randInt(MAP_COLS * 0.72, MAP_COLS - 3);
+        const by = randInt(2, MAP_ROWS - 3);
+
+        // 3×3 のビル
+        for (let yy = 0; yy < 3; yy++) {
+            for (let xx = 0; xx < 3; xx++) {
+                if (map[by + yy] && map[by + yy][bx + xx] !== undefined) {
+                    map[by + yy][bx + xx] = "BUILDING";
+                }
+            }
+        }
+    }
 }
+
 
 // =======================
 //  敵スポーン
@@ -477,6 +500,16 @@ function draw() {
     for (let x = 0; x < MAP_COLS; x++) {
       const t = map[y][x];
       if (t === TILE_TYPE.GRASS) {
+        if (t === TILE_TYPE.GRASS) {
+    ctx.fillStyle = "#335533"; // 草原
+}
+else if (t === TILE_TYPE.CITY) {
+    ctx.fillStyle = "#5a3b2e"; // 街
+}
+else if (t === "BUILDING") {
+    ctx.fillStyle = "#222222"; // ビル（黒っぽい）
+}
+
         ctx.fillStyle = "#335533"; // 薄緑
       } else {
         ctx.fillStyle = "#5a3b2e"; // 薄こげ茶
