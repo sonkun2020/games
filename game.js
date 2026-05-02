@@ -3,8 +3,8 @@
 // =======================
 
 const TILE_SIZE = 32;
-const MAP_COLS = 20;
-const MAP_ROWS = 15;
+const MAP_COLS = 120;
+const MAP_ROWS = 80;
 
 // 草原：薄緑 ／ 街：薄こげ茶
 const TILE_TYPE = {
@@ -406,24 +406,12 @@ if (e.type === "raid") {
 }
 
 
-    // ドラゴン：ランダム行動
-    if (e.type === "dragon") {
-      if (!e._nextAction || now >= e._nextAction) {
-        e._nextAction = now + randInt(800, 1500);
-        const action = randInt(0, 2);
-        if (action === 0 && dist <= e.range) {
-          const dmg = e.atk;
-          player.hp -= dmg;
-          log(`ドラゴンの火炎攻撃！ プレイヤーに ${dmg} ダメージ`);
-        } else {
-          chase(e, player, dt);
-        }
-      } else {
-        // たまに追いかける
-        if (dist > e.range) chase(e, player, dt);
-      }
-      return;
-    }
+    // ドラゴン
+if (e.type === "dragon") {
+    dragonAI(e, now, dt);
+    return;
+}
+
 
     // 通常敵：追いかけて、範囲に入ったら攻撃
     if (dist <= e.range) {
@@ -734,5 +722,76 @@ function raidBossAttack(boss, now) {
                 log(`レイドボスの凍結攻撃！ プレイヤーが1秒間凍結！`);
             }
         }
+    }
+}
+
+// =======================
+// ドラゴンのランダム行動AI
+// =======================
+function dragonAI(dragon, now, dt) {
+    const dist = distance(dragon, player);
+
+    // 行動タイミング（0.8〜1.5秒ごと）
+    if (!dragon._nextAction || now >= dragon._nextAction) {
+        dragon._nextAction = now + randInt(800, 1500);
+
+        // ランダム行動を選択
+        const action = randInt(0, 4);
+
+        // ① 火炎ブレス（中距離攻撃）
+        if (action === 0 && dist <= dragon.range + 2) {
+            const dmg = 180;
+            player.hp -= dmg;
+            applyStatus(player, "burn", 4000); // 4秒炎上
+            log(`ドラゴンの火炎ブレス！ ${dmg}ダメージ＋炎上！`);
+            return;
+        }
+
+        // ② 火炎爆発（範囲攻撃）
+        if (action === 1 && dist <= dragon.range + 1.5) {
+            const dmg = 250;
+            player.hp -= dmg;
+            applyStatus(player, "burn", 5000);
+            applyStatus(player, "healBlock", 5000);
+            log(`ドラゴンの火炎爆発！ ${dmg}ダメージ＋炎上＋回復阻害！`);
+            return;
+        }
+
+        // ③ 通常攻撃
+        if (action === 2 && dist <= dragon.range) {
+            const dmg = dragon.atk;
+            player.hp -= dmg;
+            log(`ドラゴンの通常攻撃！ ${dmg}ダメージ`);
+            return;
+        }
+
+        // ④ ランダム移動
+        if (action === 3) {
+            const angle = Math.random() * Math.PI * 2;
+            dragon._moveX = Math.cos(angle) * 1.2;
+            dragon._moveY = Math.sin(angle) * 1.2;
+            dragon._moveUntil = now + 600;
+            log(`ドラゴンがランダムに移動し始めた`);
+            return;
+        }
+
+        // ⑤ 追いかける
+        if (action === 4) {
+            chase(dragon, player, dt);
+            log(`ドラゴンがプレイヤーを追いかけている`);
+            return;
+        }
+    }
+
+    // ランダム移動中
+    if (dragon._moveUntil && now < dragon._moveUntil) {
+        dragon.x += dragon._moveX * (dt / 1000);
+        dragon.y += dragon._moveY * (dt / 1000);
+        return;
+    }
+
+    // 攻撃範囲外なら追いかける
+    if (dist > dragon.range) {
+        chase(dragon, player, dt);
     }
 }
