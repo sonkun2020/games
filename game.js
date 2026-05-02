@@ -176,6 +176,29 @@ const enemyTemplate = {
   }
 };
 
+let inDungeon = false;
+let dungeonMap = [];
+
+let inPvp = false;
+let pvpMap = [];
+
+let enemyPlayer = {
+    x: 60,
+    y: 60,
+    hp: 1000,
+    maxHp: 1000,
+    atk: 80,
+    def: 40,
+    status: {
+        freezeUntil: 0,
+        stunUntil: 0,
+        burnUntil: 0,
+        healBlockUntil: 0
+    },
+    knockback: { x: 0, y: 0, until: 0 }
+};
+
+
 // =======================
 //  マップ生成
 // =======================
@@ -305,6 +328,27 @@ function playerAttack(now) {
       }
     }
   }
+// PvP中なら敵プレイヤーにも攻撃判定
+if (inPvp) {
+    const distP = distance(player, enemyPlayer);
+    if (distP <= w.base.range + 1) {
+        let atkPower = player.atk;
+
+        // Dragonモード中なら攻撃力2倍
+        if (performance.now() < player.dragonModeUntil) {
+            atkPower *= 2;
+        }
+
+        const dmg = Math.max(0, atkPower * 1.0);
+        enemyPlayer.hp -= dmg;
+
+        log(`あなたの攻撃！ 敵プレイヤーに ${dmg} ダメージ`);
+
+        if (enemyPlayer.hp <= 0) {
+            pvpWin();
+        }
+    }
+}
 
   // スキル1（1） → 仕様に合わせて「スキル1」を使うイメージ
   if (keys["1"]) {
@@ -327,6 +371,28 @@ function playerAttack(now) {
       }
     }
   }
+  // PvP中なら敵プレイヤーにも攻撃判定
+if (inPvp) {
+    const distP = distance(player, enemyPlayer);
+    if (distP <= w.base.range + 1) {
+        let atkPower = player.atk;
+
+        // Dragonモード中なら攻撃力2倍
+        if (performance.now() < player.dragonModeUntil) {
+            atkPower *= 2;
+        }
+
+        const dmg = Math.max(0, atkPower * 1.0);
+        enemyPlayer.hp -= dmg;
+
+        log(`あなたの攻撃！ 敵プレイヤーに ${dmg} ダメージ`);
+
+        if (enemyPlayer.hp <= 0) {
+            pvpWin();
+        }
+    }
+}
+
   // スキル2（2）
 if (keys["2"]) {
     const skill = w.skills[1];
@@ -356,6 +422,27 @@ if (keys["2"]) {
         }
     }
 }
+// PvP中なら敵プレイヤーにも攻撃判定
+if (inPvp) {
+    const distP = distance(player, enemyPlayer);
+    if (distP <= w.base.range + 1) {
+        let atkPower = player.atk;
+
+        // Dragonモード中なら攻撃力2倍
+        if (performance.now() < player.dragonModeUntil) {
+            atkPower *= 2;
+        }
+
+        const dmg = Math.max(0, atkPower * 1.0);
+        enemyPlayer.hp -= dmg;
+
+        log(`あなたの攻撃！ 敵プレイヤーに ${dmg} ダメージ`);
+
+        if (enemyPlayer.hp <= 0) {
+            pvpWin();
+        }
+    }
+}
 
 // スキル3（3）
 if (keys["3"]) {
@@ -378,6 +465,29 @@ if (keys["3"]) {
         }
     }
 }
+// PvP中なら敵プレイヤーにも攻撃判定
+if (inPvp) {
+    const distP = distance(player, enemyPlayer);
+    if (distP <= w.base.range + 1) {
+        let atkPower = player.atk;
+
+        // Dragonモード中なら攻撃力2倍
+        if (performance.now() < player.dragonModeUntil) {
+            atkPower *= 2;
+        }
+
+        const dmg = Math.max(0, atkPower * 1.0);
+        enemyPlayer.hp -= dmg;
+
+        log(`あなたの攻撃！ 敵プレイヤーに ${dmg} ダメージ`);
+
+        if (enemyPlayer.hp <= 0) {
+            pvpWin();
+        }
+    }
+}
+
+  
   applyStatus(target, "stun", 700); // 0.7秒行動不能
 applyStatus(target, "burn", 5000); // 5秒炎上
 
@@ -827,4 +937,133 @@ function dragonAI(dragon, now, dt) {
     if (dist > dragon.range) {
         chase(dragon, player, dt);
     }
+}
+
+// =======================
+// 迷宮マップ生成（シンプル版）
+// =======================
+function generateDungeon() {
+    dungeonMap = [];
+
+    const rows = 40;
+    const cols = 40;
+
+    for (let y = 0; y < rows; y++) {
+        const row = [];
+        for (let x = 0; x < cols; x++) {
+            // 壁
+            if (x === 0 || y === 0 || x === cols - 1 || y === rows - 1) {
+                row.push("WALL");
+            }
+            // 部屋（床）
+            else {
+                row.push("FLOOR");
+            }
+        }
+        dungeonMap.push(row);
+    }
+
+    // ボス部屋（右上）
+    for (let y = 2; y < 8; y++) {
+        for (let x = cols - 10; x < cols - 2; x++) {
+            dungeonMap[y][x] = "BOSSROOM";
+        }
+    }
+
+    // 敵を10体スポーン
+    for (let i = 0; i < 10; i++) {
+        spawnEnemy("slime", randInt(2, cols - 3), randInt(2, rows - 3));
+    }
+
+    // ボスを1体スポーン
+    spawnEnemy("raid", cols - 6, 5);
+}
+
+function enterDungeon() {
+    inDungeon = true;
+    generateDungeon();
+    player.x = 5;
+    player.y = 5;
+    log("迷宮に入った！");
+}
+
+// マップ描画
+for (let y = 0; y < (inDungeon ? dungeonMap.length : inPvp ? pvpMap.length : MAP_ROWS); y++) {
+    for (let x = 0; x < (inDungeon ? dungeonMap[0].length : inPvp ? pvpMap[0].length : MAP_COLS); x++) {
+
+        const t = inDungeon ? dungeonMap[y][x] :
+                  inPvp ? pvpMap[y][x] :
+                  map[y][x];
+
+        if (t === TILE_TYPE.GRASS) ctx.fillStyle = "#335533";
+        else if (t === TILE_TYPE.CITY) ctx.fillStyle = "#5a3b2e";
+        else if (t === "BUILDING") ctx.fillStyle = "#222222";
+
+        // 迷宮
+        else if (t === "WALL") ctx.fillStyle = "#111111";
+        else if (t === "FLOOR") ctx.fillStyle = "#444444";
+        else if (t === "BOSSROOM") ctx.fillStyle = "#550000";
+
+        // PvP
+        else if (t === "PVP") ctx.fillStyle = "#333366"; // 青っぽいフィールド
+
+        ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    }
+}
+
+
+// =======================
+// PvPマップ生成（円形・障害物なし）
+// =======================
+function generatePvpMap() {
+    pvpMap = [];
+
+    const rows = 80;  // 迷宮の2倍
+    const cols = 80;
+
+    const centerX = cols / 2;
+    const centerY = rows / 2;
+    const radius = 35; // 円の半径
+
+    for (let y = 0; y < rows; y++) {
+        const row = [];
+        for (let x = 0; x < cols; x++) {
+
+            const dx = x - centerX;
+            const dy = y - centerY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // 円の外側 → 壁
+            if (dist > radius) {
+                row.push("WALL");
+            }
+            // 円の内側 → PvPフィールド
+            else {
+                row.push("PVP");
+            }
+        }
+        pvpMap.push(row);
+    }
+}
+
+function enterPvp() {
+    inPvp = true;
+    generatePvpMap();
+    player.x = 40;
+    player.y = 40;
+    log("PvPフィールドに入った！");
+}
+
+function pvpWin() {
+    log("🎉 PvP勝利！ 🎉");
+
+    // 敵プレイヤーをリスポーン
+    enemyPlayer.hp = enemyPlayer.maxHp;
+    enemyPlayer.x = 60;
+    enemyPlayer.y = 60;
+
+    // プレイヤーも回復
+    player.hp = player.maxHp;
+
+    log("敵プレイヤーが復活した！");
 }
