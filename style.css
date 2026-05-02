@@ -5,7 +5,7 @@ body {
   color: #eee;
 }
 
-#ui {
+#ui-root {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -46,7 +46,7 @@ body {
 
 #main {
   display: grid;
-  grid-template-columns: 1.2fr 1.2fr 1fr;
+  grid-template-columns: 1.4fr 1.2fr 1fr;
   gap: 8px;
   padding: 8px;
   flex: 1;
@@ -68,18 +68,31 @@ h2 {
   padding-bottom: 4px;
 }
 
-#weapon-list .weapon-card {
+#game-canvas {
   border: 1px solid #333;
-  padding: 6px;
-  margin-bottom: 6px;
-  font-size: 12px;
+  background: #000;
+  display: block;
 }
 
-#weapon-list .weapon-name {
-  font-weight: 700;
+.hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #aaa;
 }
 
 #log {
   font-size: 12px;
   white-space: pre-wrap;
+}
+
+#weapon-info {
+  font-size: 12px;
+}
+
+#weapon-info .skill {
+  margin-left: 8px;
+}
+
+pre {
+  font-size: 12px;
 }
