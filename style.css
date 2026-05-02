@@ -1,1 +1,85 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111;
+  color: #eee;
+}
 
+#ui {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#top-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 2fr;
+  align-items: center;
+  padding: 8px 12px;
+  background: #222;
+  border-bottom: 1px solid #444;
+  font-size: 14px;
+}
+
+#player-info {
+  font-weight: 600;
+}
+
+#menu-buttons button {
+  padding: 4px 10px;
+  background: #444;
+  color: #eee;
+  border: 1px solid #666;
+  cursor: pointer;
+}
+
+#menu-buttons button:hover {
+  background: #666;
+}
+
+#notice {
+  font-size: 12px;
+  padding-left: 12px;
+  border-left: 1px solid #444;
+  color: #ffd27f;
+}
+
+#main {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr;
+  gap: 8px;
+  padding: 8px;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+section {
+  background: #181818;
+  border: 1px solid #333;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
+}
+
+#weapon-list .weapon-card {
+  border: 1px solid #333;
+  padding: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+#weapon-list .weapon-name {
+  font-weight: 700;
+}
+
+#log {
+  font-size: 12px;
+  white-space: pre-wrap;
+}
