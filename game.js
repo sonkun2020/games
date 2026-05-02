@@ -27,6 +27,19 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+let effects = [];
+// =======================
+// エフェクト追加
+// =======================
+function addEffect(x, y, type, duration = 300) {
+    effects.push({
+        x,
+        y,
+        type,
+        end: performance.now() + duration
+    });
+}
+
 // =======================
 //  武器・スキルデータ
 // =======================
@@ -365,6 +378,9 @@ if (inPvp) {
 
 　　　　　applyKnockback(target, player, 5.0, 300); // 5mノックバック
 　　　　　applyKnockback(target, player, 3.0, 200);
+        addEffect(target.x, target.y, "fire", 400);
+addEffect(target.x, target.y, "slash", 200);
+
 
         
         log(`スキル「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
@@ -418,6 +434,9 @@ if (keys["2"]) {
 
           　applyStatus(target, "burn", 5000);
           　addDragonPercent(10); // スキル2で10％増加
+          addEffect(target.x, target.y, "slash", 200);
+addEffect(target.x, target.y, "fire", 300);
+
 
 
             log(`スキル2「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
@@ -461,6 +480,11 @@ if (keys["3"]) {
           　applyStatus(target, "stun", 700);
           　applyKnockback(target, player, 2.0, 300); // 2mノックバックを0.3秒
          　 addDragonPercent(15); // スキル3で15％増加
+          addEffect(target.x, target.y, "shock", 250);
+          applyStatus(target, "freeze", 800);
+　　　　　　addEffect(target.x, target.y, "ice", 500);
+
+
 
           
             log(`スキル3「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
@@ -606,6 +630,33 @@ function updatePlayer(dt, now) {
 let canvas, ctx;
 
 function draw() {
+  // =======================
+// 敵HPバー描画
+// =======================
+function drawEnemyHp(e) {
+    const barWidth = TILE_SIZE;
+    const barHeight = 6;
+
+    const hpRatio = Math.max(0, e.hp / e.maxHp);
+
+    // HPバーの位置（敵の頭上）
+    const x = e.x * TILE_SIZE;
+    const y = e.y * TILE_SIZE - 10;
+
+    // 背景（黒）
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(x, y, barWidth, barHeight);
+
+    // HP部分（緑 or 赤）
+    if (e.type === "raid" || e.type === "dragon") {
+        ctx.fillStyle = "red"; // ボスは赤
+    } else {
+        ctx.fillStyle = "lime"; // 通常敵は緑
+    }
+
+    ctx.fillRect(x, y, barWidth * hpRatio, barHeight);
+}
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // マップ
@@ -653,6 +704,8 @@ else if (t === "BUILDING") {
       TILE_SIZE
     );
   });
+drawEnemyHp(e);
+
   // =======================
 // UI更新
 // =======================
@@ -721,6 +774,52 @@ if (now < player.dragonModeUntil) {
 
 }
 updateSkillIcons(now);
+
+  // =======================
+// エフェクト描画
+// =======================
+for (let i = effects.length - 1; i >= 0; i--) {
+    const e = effects[i];
+
+    if (now > e.end) {
+        effects.splice(i, 1);
+        continue;
+    }
+
+    if (e.type === "slash") {
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.fillRect(e.x * TILE_SIZE, e.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    }
+
+    if (e.type === "fire") {
+        ctx.fillStyle = "rgba(255,80,0,0.7)";
+        ctx.beginPath();
+        ctx.arc(
+            e.x * TILE_SIZE + TILE_SIZE / 2,
+            e.y * TILE_SIZE + TILE_SIZE / 2,
+            TILE_SIZE / 2,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+    }
+
+    if (e.type === "shock") {
+        ctx.strokeStyle = "rgba(255,255,0,0.8)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(
+            e.x * TILE_SIZE,
+            e.y * TILE_SIZE,
+            TILE_SIZE,
+            TILE_SIZE
+        );
+    }
+
+    if (e.type === "ice") {
+        ctx.fillStyle = "rgba(0,150,255,0.6)";
+        ctx.fillRect(e.x * TILE_SIZE, e.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    }
+}
 
 }
 
@@ -940,6 +1039,8 @@ function raidBossAttack(boss, now) {
         if (pattern === 2) {
             if (dist <= boss.range) {
                 applyStatus(player, "freeze", 1000);
+              addEffect(target.x, target.y, "ice", 500);
+
                 log(`レイドボスの凍結攻撃！ プレイヤーが1秒間凍結！`);
             }
         }
