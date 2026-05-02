@@ -216,3 +216,19 @@ pre {
     height: 40px;
     font-size: 22px;
 }
+#player-hp {
+    height: 25px;
+}
+
+#enemy-hp {
+    height: 20px;
+}
+#log {
+    font-size: 16px;
+    line-height: 1.3;
+}
+.skill {
+    width: 70px;
+    height: 70px;
+    font-size: 28px;
+}
