@@ -726,6 +726,17 @@ else if (t === "BUILDING") {
     );
   });
 drawEnemyHp(e);
+ctx.save();
+ctx.globalAlpha = 0.7;
+for (let i = effects.length - 1; i >= 0; i--) {
+    const e = effects[i];
+    if (now > e.end) {
+        effects.splice(i, 1);
+        continue;
+    }
+    // ここにエフェクト描画
+}
+ctx.restore();
 
   // =======================
 // UI更新
