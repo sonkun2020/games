@@ -1260,3 +1260,13 @@ document.getElementById("skill3").onclick = () => {
     keys[";"] = true;
     setTimeout(() => keys[";"] = false, 50);
 };
+// =======================
+// SE再生
+// =======================
+function playSE(id) {
+    const se = document.getElementById(id);
+    if (!se) return;
+
+    se.currentTime = 0;
+    se.play();
+}
