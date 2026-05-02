@@ -143,6 +143,10 @@ const player = {
 },
 knockback: { x: 0, y: 0, until: 0 }
 
+dragonPercent: 0,
+dragonModeUntil: 0,
+
+
 };
 
 const enemies = [];
@@ -288,6 +292,11 @@ function playerAttack(now) {
         skill._nextUse = now + skill.ct * 1000;
         const dmg = Math.max(0, player.atk * 1.4 - 0); // ざっくり倍率
         target.hp -= dmg;
+
+　　　　　applyKnockback(target, player, 5.0, 300); // 5mノックバック
+　　　　　applyKnockback(target, player, 3.0, 200);
+
+        
         log(`スキル「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
         if (target.hp <= 0) {
           onEnemyDead(target);
@@ -303,8 +312,22 @@ if (keys["2"]) {
 
         const target = enemies.find(e => distance(player, e) <= w.base.range + 1);
         if (target) {
+          let atkPower = player.atk;
+
+　　　　　　　// Dragonモード中なら攻撃力2倍
+　　　　　　　if (performance.now() < player.dragonModeUntil) {
+   　　　　　 　　atkPower *= 2;
+　　　　　　　}
+
+　　　　　　　const dmg = Math.max(0, atkPower * 1.6);
+
             const dmg = Math.max(0, player.atk * 1.6);
             target.hp -= dmg;
+
+          　applyStatus(target, "burn", 5000);
+          　addDragonPercent(10); // スキル2で10％増加
+
+
             log(`スキル2「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
             if (target.hp <= 0) onEnemyDead(target);
         }
@@ -321,6 +344,12 @@ if (keys["3"]) {
         if (target) {
             const dmg = Math.max(0, player.atk * 2.0);
             target.hp -= dmg;
+            
+          　applyStatus(target, "stun", 700);
+          　applyKnockback(target, player, 2.0, 300); // 2mノックバックを0.3秒
+         　 addDragonPercent(15); // スキル3で15％増加
+
+          
             log(`スキル3「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
             if (target.hp <= 0) onEnemyDead(target);
         }
@@ -355,24 +384,27 @@ function onEnemyDead(enemy) {
 
 // 敵AI
 function updateEnemies(dt, now) {
+  // ノックバック中なら強制移動
+if (now < e.knockback.until) {
+    e.x += e.knockback.x * (dt / 1000);
+    e.y += e.knockback.y * (dt / 1000);
+    return; // ノックバック中は他の行動をしない
+}
+
   enemies.forEach(e => {
     const dist = distance(e, player);
 
-    // レイドボス：攻撃頻度0.4秒
-    if (e.type === "raid") {
-      if (dist <= e.range) {
-        if (!e.lastAttack || now - e.lastAttack >= 400) {
-          e.lastAttack = now;
-          const dmg = e.atk;
-          player.hp -= dmg;
-          log(`レイドボスの攻撃！ プレイヤーに ${dmg} ダメージ`);
-        }
-      } else {
-        // 追いかける
+    // レイドボス
+if (e.type === "raid") {
+    raidBossAttack(e, now);
+
+    // 攻撃範囲外なら追いかける
+    if (distance(e, player) > e.range) {
         chase(e, player, dt);
-      }
-      return;
     }
+    return;
+}
+
 
     // ドラゴン：ランダム行動
     if (e.type === "dragon") {
@@ -625,5 +657,82 @@ function applyStatus(target, type, durationMs) {
     }
     if (type === "healBlock") {
         target.status.healBlockUntil = now + durationMs;
+    }
+}
+// =======================
+// Dragon％を増やす
+// =======================
+function addDragonPercent(amount) {
+    player.dragonPercent += amount;
+    if (player.dragonPercent >= 100) {
+        player.dragonPercent = 100;
+        activateDragonMode();
+    }
+}
+// =======================
+// Dragonモード発動
+// =======================
+function activateDragonMode() {
+    const now = performance.now();
+    player.dragonModeUntil = now + 8000; // 8秒間強化
+
+    log("🔥 Dragonモード発動！攻撃力が大幅に上昇！ 🔥");
+}
+
+// =======================
+// ノックバック処理
+// =======================
+function applyKnockback(target, from, distance, durationMs) {
+    const now = performance.now();
+
+    // 方向ベクトル
+    const dx = target.x - from.x;
+    const dy = target.y - from.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    // ノックバック速度
+    target.knockback.x = (dx / len) * distance;
+    target.knockback.y = (dy / len) * distance;
+    target.knockback.until = now + durationMs;
+}
+
+// =======================
+// レイドボスの攻撃パターン
+// =======================
+function raidBossAttack(boss, now) {
+    const dist = distance(boss, player);
+
+    // 0.4秒ごとに攻撃
+    if (!boss.lastAttack || now - boss.lastAttack >= 400) {
+        boss.lastAttack = now;
+
+        // ランダムで攻撃パターンを決定
+        const pattern = Math.floor(Math.random() * 3);
+
+        // ① 周囲攻撃（200ダメ）
+        if (pattern === 0) {
+            if (dist <= boss.range + 1.5) {
+                const dmg = 200;
+                player.hp -= dmg;
+                log(`レイドボスの周囲攻撃！ プレイヤーに ${dmg} ダメージ`);
+            }
+        }
+
+        // ② 単体攻撃（350ダメ）
+        if (pattern === 1) {
+            if (dist <= boss.range) {
+                const dmg = 350;
+                player.hp -= dmg;
+                log(`レイドボスの強攻撃！ プレイヤーに ${dmg} ダメージ`);
+            }
+        }
+
+        // ③ 凍結付与（1秒）
+        if (pattern === 2) {
+            if (dist <= boss.range) {
+                applyStatus(player, "freeze", 1000);
+                log(`レイドボスの凍結攻撃！ プレイヤーが1秒間凍結！`);
+            }
+        }
     }
 }
