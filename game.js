@@ -338,6 +338,8 @@ function playerAttack(now) {
     if (target) {
       const dmg = Math.max(0, player.atk - 0); // 防御簡略
       target.hp -= dmg;
+      playSE("se-attack");
+
       log(`プレイヤーの通常攻撃！ ${target.name} に ${dmg} ダメージ`);
       if (target.hp <= 0) {
         onEnemyDead(target);
@@ -384,6 +386,8 @@ addEffect(target.x, target.y, "slash", 200);
 
         
         log(`スキル「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
+        playSE("se-skill");
+
         if (target.hp <= 0) {
           onEnemyDead(target);
         }
@@ -440,6 +444,8 @@ addEffect(target.x, target.y, "fire", 300);
 
 
             log(`スキル2「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
+          playSE("se-skill");
+
             if (target.hp <= 0) onEnemyDead(target);
         }
     }
@@ -488,6 +494,8 @@ if (keys["3"]) {
 
           
             log(`スキル3「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
+          playSE("se-skill");
+
             if (target.hp <= 0) onEnemyDead(target);
         }
     }
@@ -984,6 +992,7 @@ document.getElementById("skills").classList.add("flash");
 setTimeout(() => {
     document.getElementById("skills").classList.remove("flash");
 }, 300);
+playSE("se-dragon");
 
 }
 
@@ -1023,6 +1032,8 @@ function raidBossAttack(boss, now) {
                 const dmg = 200;
                 player.hp -= dmg;
                 log(`レイドボスの周囲攻撃！ プレイヤーに ${dmg} ダメージ`);
+              playSE("se-hit");
+
             }
         }
 
@@ -1032,6 +1043,8 @@ function raidBossAttack(boss, now) {
                 const dmg = 350;
                 player.hp -= dmg;
                 log(`レイドボスの強攻撃！ プレイヤーに ${dmg} ダメージ`);
+              playSE("se-hit");
+
             }
         }
 
@@ -1042,6 +1055,8 @@ function raidBossAttack(boss, now) {
               addEffect(target.x, target.y, "ice", 500);
 
                 log(`レイドボスの凍結攻撃！ プレイヤーが1秒間凍結！`);
+              playSE("se-hit");
+
             }
         }
     }
@@ -1084,6 +1099,8 @@ function dragonAI(dragon, now, dt) {
             const dmg = dragon.atk;
             player.hp -= dmg;
             log(`ドラゴンの通常攻撃！ ${dmg}ダメージ`);
+          playSE("se-hit");
+
             return;
         }
 
