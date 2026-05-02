@@ -263,8 +263,8 @@ function playerAttack(now) {
     }
   }
 
-  // スキル1（K） → 仕様に合わせて「スキル1」を使うイメージ
-  if (keys["k"]) {
+  // スキル1（1） → 仕様に合わせて「スキル1」を使うイメージ
+  if (keys["1"]) {
     const skill = w.skills[0];
     if (!skill._nextUse || now >= skill._nextUse) {
       const target = enemies.find(e => distance(player, e) <= w.base.range + 1);
@@ -279,6 +279,37 @@ function playerAttack(now) {
       }
     }
   }
+  // スキル2（2）
+if (keys["2"]) {
+    const skill = w.skills[1];
+    if (skill && (!skill._nextUse || now >= skill._nextUse)) {
+        skill._nextUse = now + skill.ct * 1000;
+
+        const target = enemies.find(e => distance(player, e) <= w.base.range + 1);
+        if (target) {
+            const dmg = Math.max(0, player.atk * 1.6);
+            target.hp -= dmg;
+            log(`スキル2「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
+            if (target.hp <= 0) onEnemyDead(target);
+        }
+    }
+}
+
+// スキル3（3）
+if (keys["3"]) {
+    const skill = w.skills[2];
+    if (skill && (!skill._nextUse || now >= skill._nextUse)) {
+        skill._nextUse = now + skill.ct * 1000;
+
+        const target = enemies.find(e => distance(player, e) <= w.base.range + 1.5);
+        if (target) {
+            const dmg = Math.max(0, player.atk * 2.0);
+            target.hp -= dmg;
+            log(`スキル3「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
+            if (target.hp <= 0) onEnemyDead(target);
+        }
+    }
+}
 }
 
 // 敵死亡時
@@ -557,7 +588,7 @@ window.addEventListener("load", () => {
   loadGame();
   spawnInitialEnemies();
   renderPlayerUI();
-  log("ゲーム開始。WASDで移動、Jで攻撃、Kでスキル1。");
+  log("ゲーム開始。WASDで移動、jで攻撃、1でスキル1。");
 
   requestAnimationFrame(loop);
 });
