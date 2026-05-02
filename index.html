@@ -2,404 +2,43 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>3D Field & Dungeon Prototype</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #000;
-      font-family: system-ui, sans-serif;
-      color: #fff;
-    }
-    #ui {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      padding: 8px 12px;
-      background: rgba(0, 0, 0, 0.6);
-      border-radius: 6px;
-      font-size: 12px;
-      line-height: 1.4;
-      max-width: 260px;
-      z-index: 10;
-    }
-    #ui h1 {
-      font-size: 14px;
-      margin: 0 0 4px;
-    }
-    #ui p {
-      margin: 2px 0;
-    }
-  </style>
+  <title>Raid & Dragon RPG</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div id="ui">
-  <h1>3D Prototype</h1>
-  <p>WASD：移動</p>
-  <p>マウスドラッグ：視点回転</p>
-  <p>スペース：ジャンプ（最大3回）</p>
-  <p>数字キー 1〜4：技（今はコンソールに表示）</p>
-  <p>中央ドーム：PvP禁止エリア</p>
-  <p>迷宮・対戦：マップ外の別エリア（ワープ想定）</p>
-</div>
+  <div id="ui">
+    <header id="top-bar">
+      <div id="player-info">
+        Lv: <span id="player-level">1</span>
+        ／ 所持金: <span id="player-gold">0</span> ドラ
+      </div>
+      <div id="menu-buttons">
+        <button id="btn-menu">メニュー</button>
+      </div>
+      <div id="notice">
+        <strong>お知らせ：</strong>
+        <span id="notice-text">ようこそ。ゲーム仕様はすべて完成しています。</span>
+      </div>
+    </header>
 
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <main id="main">
+      <section id="status-panel">
+        <h2>プレイヤー情報</h2>
+        <pre id="player-status"></pre>
+      </section>
 
-<script>
-  // ===== 基本セットアップ =====
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x202030);
+      <section id="weapon-panel">
+        <h2>武器一覧</h2>
+        <div id="weapon-list"></div>
+      </section>
 
-  const camera = new THREE.PerspectiveCamera(
-    60,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    200000
-  );
+      <section id="log-panel">
+        <h2>ログ</h2>
+        <div id="log"></div>
+      </section>
+    </main>
+  </div>
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-
-  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x404040, 0.8);
-  scene.add(hemiLight);
-
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(100, 200, 100);
-  scene.add(dirLight);
-
-  // ===== マップスケール（約300倍） =====
-  const MAP_SIZE = 24000; // 元80×300 ≒ 24000
-  const HALF_MAP = MAP_SIZE / 2;
-
-  // ===== ベース地面 =====
-  const baseGroundGeo = new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE);
-  const baseGroundMat = new THREE.MeshPhongMaterial({ color: 0x444444 });
-  const baseGround = new THREE.Mesh(baseGroundGeo, baseGroundMat);
-  baseGround.rotation.x = -Math.PI / 2;
-  baseGround.receiveShadow = true;
-  scene.add(baseGround);
-
-  // ===== 草原（黄緑・平ら） =====
-  const fieldGeo = new THREE.PlaneGeometry(8000, 8000);
-  const fieldMat = new THREE.MeshPhongMaterial({ color: 0x88aa55 });
-  const field = new THREE.Mesh(fieldGeo, fieldMat);
-  field.rotation.x = -Math.PI / 2;
-  field.position.set(8000, 0.01, 4000);
-  scene.add(field);
-
-  // ===== 街の地面（土） =====
-  const townGeo = new THREE.PlaneGeometry(6000, 6000);
-  const townMat = new THREE.MeshPhongMaterial({ color: 0x7a5a3a });
-  const town = new THREE.Mesh(townGeo, townMat);
-  town.rotation.x = -Math.PI / 2;
-  town.position.set(0, 0.01, 0);
-  scene.add(town);
-
-  // ===== 中央 PvP禁止ドーム =====
-  const domeRadius = 2000;
-  const domeGeo = new THREE.SphereGeometry(domeRadius, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
-  const domeMat = new THREE.MeshPhongMaterial({
-    color: 0x444488,
-    transparent: true,
-    opacity: 0.25,
-    side: THREE.DoubleSide
-  });
-  const dome = new THREE.Mesh(domeGeo, domeMat);
-  dome.position.set(0, 0, 0);
-  scene.add(dome);
-
-  // ===== 街のゲート（建物） =====
-  const gateGeo = new THREE.BoxGeometry(1000, 600, 200);
-  const gateMat = new THREE.MeshPhongMaterial({ color: 0x888888 });
-  const gate = new THREE.Mesh(gateGeo, gateMat);
-  gate.position.set(0, 300, -3500);
-  scene.add(gate);
-
-  // ===== 遺跡迷宮入口（建物） =====
-  const ruinBaseGeo = new THREE.BoxGeometry(1400, 100, 400);
-  const ruinBaseMat = new THREE.MeshPhongMaterial({ color: 0x555555 });
-  const ruinBase = new THREE.Mesh(ruinBaseGeo, ruinBaseMat);
-  ruinBase.position.set(0, 50, -8000);
-  scene.add(ruinBase);
-
-  const ruinPillarGeo = new THREE.BoxGeometry(100, 800, 100);
-  const ruinPillarMat = new THREE.MeshPhongMaterial({ color: 0x777777 });
-  const pillarL = new THREE.Mesh(ruinPillarGeo, ruinPillarMat);
-  const pillarR = new THREE.Mesh(ruinPillarGeo, ruinPillarMat);
-  pillarL.position.set(-500, 400, -8000);
-  pillarR.position.set(500, 400, -8000);
-  scene.add(pillarL, pillarR);
-
-  const ruinTopGeo = new THREE.BoxGeometry(1200, 100, 100);
-  const ruinTop = new THREE.Mesh(ruinTopGeo, ruinPillarMat);
-  ruinTop.position.set(0, 850, -8000);
-  scene.add(ruinTop);
-
-  // ===== マップを囲う岩壁（登れない） =====
-  const colliders = [];
-
-  function addRockWall(x, z, w, h, d) {
-    const rockGeo = new THREE.BoxGeometry(w, h, d);
-    const rockMat = new THREE.MeshPhongMaterial({ color: 0x555555 });
-    const rock = new THREE.Mesh(rockGeo, rockMat);
-    rock.position.set(x, h / 2, z);
-    scene.add(rock);
-    colliders.push(rock);
-  }
-
-  const WALL_HEIGHT = 5000;
-  const WALL_THICK = 500;
-
-  addRockWall(0, -HALF_MAP, MAP_SIZE, WALL_HEIGHT, WALL_THICK);   // 奥
-  addRockWall(0, HALF_MAP, MAP_SIZE, WALL_HEIGHT, WALL_THICK);    // 手前
-  addRockWall(-HALF_MAP, 0, WALL_THICK, WALL_HEIGHT, MAP_SIZE);   // 左
-  addRockWall(HALF_MAP, 0, WALL_THICK, WALL_HEIGHT, MAP_SIZE);    // 右
-
-  // 建物もコライダーに追加
-  colliders.push(gate, ruinBase, pillarL, pillarR, ruinTop);
-
-  // ===== プレイヤー（変哲もない人間） =====
-  const player = new THREE.Group();
-
-  const bodyGeo = new THREE.BoxGeometry(100, 200, 60);
-  const bodyMat = new THREE.MeshPhongMaterial({ color: 0xcccccc });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.set(0, 200, 0);
-  player.add(body);
-
-  const headGeo = new THREE.SphereGeometry(50, 16, 16);
-  const headMat = new THREE.MeshPhongMaterial({ color: 0xffe0bd });
-  const head = new THREE.Mesh(headGeo, headMat);
-  head.position.set(0, 320, 0);
-  player.add(head);
-
-  const legGeo = new THREE.BoxGeometry(40, 120, 40);
-  const legMat = new THREE.MeshPhongMaterial({ color: 0x555555 });
-  const legL = new THREE.Mesh(legGeo, legMat);
-  const legR = new THREE.Mesh(legGeo, legMat);
-  legL.position.set(-25, 120, 0);
-  legR.position.set(25, 120, 0);
-  player.add(legL, legR);
-
-  const armGeo = new THREE.BoxGeometry(30, 140, 30);
-  const armMat = new THREE.MeshPhongMaterial({ color: 0xcccccc });
-  const armL = new THREE.Mesh(armGeo, armMat);
-  const armR = new THREE.Mesh(armGeo, armMat);
-  armL.position.set(-80, 260, 0);
-  armR.position.set(80, 260, 0);
-  player.add(armL, armR);
-
-  player.position.set(0, 0, 1000);
-  scene.add(player);
-
-  // ===== ドラゴン（人間の2倍、西洋風イメージ） =====
-  const dragon = new THREE.Group();
-  const dragonScale = 2.0;
-
-  const dBodyGeo = new THREE.BoxGeometry(200 * dragonScale, 120 * dragonScale, 400 * dragonScale);
-  const dBodyMat = new THREE.MeshPhongMaterial({ color: 0x772222 });
-  const dBody = new THREE.Mesh(dBodyGeo, dBodyMat);
-  dBody.position.set(0, 400, -9000);
-  dragon.add(dBody);
-
-  const dNeckGeo = new THREE.BoxGeometry(60 * dragonScale, 100 * dragonScale, 150 * dragonScale);
-  const dNeck = new THREE.Mesh(dNeckGeo, dBodyMat);
-  dNeck.position.set(0, 480, -9000 - 200);
-  dragon.add(dNeck);
-
-  const dHeadGeo = new THREE.BoxGeometry(120 * dragonScale, 80 * dragonScale, 140 * dragonScale);
-  const dHead = new THREE.Mesh(dHeadGeo, dBodyMat);
-  dHead.position.set(0, 520, -9000 - 350);
-  dragon.add(dHead);
-
-  const dWingGeo = new THREE.BoxGeometry(40 * dragonScale, 250 * dragonScale, 500 * dragonScale);
-  const dWingMat = new THREE.MeshPhongMaterial({
-    color: 0x552222,
-    transparent: true,
-    opacity: 0.8
-  });
-  const dWingL = new THREE.Mesh(dWingGeo, dWingMat);
-  const dWingR = new THREE.Mesh(dWingGeo, dWingMat);
-  dWingL.position.set(-250 * dragonScale, 520, -9000);
-  dWingR.position.set(250 * dragonScale, 520, -9000);
-  dragon.add(dWingL, dWingR);
-
-  const dTailGeo = new THREE.BoxGeometry(50 * dragonScale, 50 * dragonScale, 300 * dragonScale);
-  const dTail = new THREE.Mesh(dTailGeo, dBodyMat);
-  dTail.position.set(0, 360, -9000 + 350);
-  dragon.add(dTail);
-
-  scene.add(dragon);
-
-  // ===== 迷宮・対戦エリア（マップ外の目印だけ） =====
-  const dungeonMarkerGeo = new THREE.BoxGeometry(500, 500, 500);
-  const dungeonMarkerMat = new THREE.MeshPhongMaterial({ color: 0x3333aa });
-  const dungeonMarker = new THREE.Mesh(dungeonMarkerGeo, dungeonMarkerMat);
-  dungeonMarker.position.set(50000, 250, 0); // ここを迷宮エリアと想定
-  scene.add(dungeonMarker);
-
-  const pvpMarkerGeo = new THREE.BoxGeometry(500, 500, 500);
-  const pvpMarkerMat = new THREE.MeshPhongMaterial({ color: 0xaa3333 });
-  const pvpMarker = new THREE.Mesh(pvpMarkerGeo, pvpMarkerMat);
-  pvpMarker.position.set(-50000, 250, 0); // ここを対戦エリアと想定
-  scene.add(pvpMarker);
-
-  // ===== 入力 =====
-  const keys = { w: false, a: false, s: false, d: false, space: false };
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "w") keys.w = true;
-    if (e.key === "a") keys.a = true;
-    if (e.key === "s") keys.s = true;
-    if (e.key === "d") keys.d = true;
-    if (e.code === "Space") keys.space = true;
-
-    if (e.key >= "1" && e.key <= "9") {
-      console.log("技キー:", e.key);
-    }
-  });
-  window.addEventListener("keyup", (e) => {
-    if (e.key === "w") keys.w = false;
-    if (e.key === "a") keys.a = false;
-    if (e.key === "s") keys.s = false;
-    if (e.key === "d") keys.d = false;
-    if (e.code === "Space") keys.space = false;
-  });
-
-  // ===== 移動・ジャンプ・当たり判定 =====
-  let velocityY = 0;
-  const gravity = -200;
-  const moveSpeed = 800;
-  const jumpPower = 800;
-  let jumpCount = 0;
-  const maxJump = 3;
-
-  function getPlayerBox(nextPos) {
-    const box = new THREE.Box3();
-    const size = new THREE.Vector3(100, 350, 100);
-    const min = new THREE.Vector3(
-      nextPos.x - size.x / 2,
-      nextPos.y,
-      nextPos.z - size.z / 2
-    );
-    const max = new THREE.Vector3(
-      nextPos.x + size.x / 2,
-      nextPos.y + size.y,
-      nextPos.z + size.z / 2
-    );
-    box.min.copy(min);
-    box.max.copy(max);
-    return box;
-  }
-
-  function checkCollision(nextPos) {
-    const playerBox = getPlayerBox(nextPos);
-    for (const obj of colliders) {
-      const box = new THREE.Box3().setFromObject(obj);
-      if (box.intersectsBox(playerBox)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function movePlayer(delta) {
-    const dir = new THREE.Vector3();
-
-    if (keys.w) dir.z -= 1;
-    if (keys.s) dir.z += 1;
-    if (keys.a) dir.x -= 1;
-    if (keys.d) dir.x += 1;
-
-    // カメラの向きに合わせて移動方向を回転
-    if (dir.lengthSq() > 0) {
-      dir.normalize();
-      const angle = Math.atan2(
-        camera.position.x - player.position.x,
-        camera.position.z - player.position.z
-      );
-      const sin = Math.sin(angle);
-      const cos = Math.cos(angle);
-      const rotatedX = dir.x * cos - dir.z * sin;
-      const rotatedZ = dir.x * sin + dir.z * cos;
-      dir.set(rotatedX, 0, rotatedZ);
-
-      const nextPos = player.position.clone().addScaledVector(dir, moveSpeed * delta);
-      nextPos.y = player.position.y;
-
-      // マップ外に出ないように
-      nextPos.x = Math.max(-HALF_MAP + 200, Math.min(HALF_MAP - 200, nextPos.x));
-      nextPos.z = Math.max(-HALF_MAP + 200, Math.min(HALF_MAP - 200, nextPos.z));
-
-      if (!checkCollision(nextPos)) {
-        player.position.copy(nextPos);
-      }
-
-      // プレイヤーの向き
-      player.rotation.y = angle;
-    }
-
-    // ジャンプ・重力
-    const onGround = player.position.y <= 0;
-    if (onGround) {
-      player.position.y = 0;
-      velocityY = 0;
-      jumpCount = 0;
-    }
-
-    if (keys.space && jumpCount < maxJump) {
-      velocityY = jumpPower;
-      jumpCount++;
-      keys.space = false;
-    }
-
-    velocityY += gravity * delta;
-    let nextY = player.position.y + velocityY * delta;
-    if (nextY < 0) nextY = 0;
-    player.position.y = nextY;
-  }
-
-  // ===== TPSカメラ＋マウス回転 =====
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enablePan = false;
-  controls.enableZoom = false;
-  controls.target.copy(player.position);
-  camera.position.set(player.position.x, player.position.y + 800, player.position.z + 1600);
-  controls.update();
-
-  function updateCamera() {
-    controls.target.copy(player.position.clone().add(new THREE.Vector3(0, 200, 0)));
-    controls.update();
-  }
-
-  // ===== レスポンシブ =====
-  window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-
-  // ===== アニメーションループ =====
-  let lastTime = performance.now();
-  function animate() {
-    requestAnimationFrame(animate);
-
-    const now = performance.now();
-    const delta = (now - lastTime) / 1000;
-    lastTime = now;
-
-    movePlayer(delta);
-
-    const t = now * 0.002;
-    dWingL.rotation.z = Math.sin(t) * 0.3;
-    dWingR.rotation.z = -Math.sin(t) * 0.3;
-
-    updateCamera();
-    renderer.render(scene, camera);
-  }
-
-  animate();
-</script>
+  <script src="game.js"></script>
 </body>
 </html>
