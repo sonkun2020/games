@@ -134,6 +134,15 @@ const weapons = {
     ]
   }
 };
+// 攻撃力バランス調整
+player.atk = 120;
+player.def = 40;
+
+// 武器のCT調整
+weapons[0].skills[0].ct = 1200; // 剣
+weapons[1].skills[0].ct = 1500; // 槍
+weapons[2].skills[0].ct = 1800; // 斧
+weapons[3].skills[0].ct = 900;  // Dragon sword（強め）
 
 // =======================
 //  プレイヤー・敵・状態
@@ -298,6 +307,10 @@ function spawnInitialEnemies() {
   spawnEnemy("raid", MAP_COLS - 4, 3);
   // ドラゴン
   spawnEnemy("dragon", MAP_COLS - 4, MAP_ROWS - 4);
+}
+if (now > nextSpawn) {
+    spawnEnemy("slime", randInt(5, MAP_COLS - 5), randInt(5, MAP_ROWS - 5));
+    nextSpawn = now + 3000; // 3秒に1体
 }
 
 // =======================
