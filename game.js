@@ -697,6 +697,28 @@ function updateSkillIcons(now) {
     } else {
         s3.classList.remove("cooldown");
     }
+  // Dragon％100％で光らせる
+if (player.dragonPercent >= 100) {
+    s1.classList.add("ready");
+    s2.classList.add("ready");
+    s3.classList.add("ready");
+} else {
+    s1.classList.remove("ready");
+    s2.classList.remove("ready");
+    s3.classList.remove("ready");
+}
+
+// Dragonモード中は赤く光らせる
+if (now < player.dragonModeUntil) {
+    s1.classList.add("dragon");
+    s2.classList.add("dragon");
+    s3.classList.add("dragon");
+} else {
+    s1.classList.remove("dragon");
+    s2.classList.remove("dragon");
+    s3.classList.remove("dragon");
+}
+
 }
 updateSkillIcons(now);
 
@@ -858,6 +880,12 @@ function activateDragonMode() {
     player.dragonModeUntil = now + 8000; // 8秒間強化
 
     log("🔥 Dragonモード発動！攻撃力が大幅に上昇！ 🔥");
+  // 発動時に一瞬光らせる
+document.getElementById("skills").classList.add("flash");
+setTimeout(() => {
+    document.getElementById("skills").classList.remove("flash");
+}, 300);
+
 }
 
 // =======================
