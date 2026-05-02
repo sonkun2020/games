@@ -12,12 +12,15 @@ const TILE_TYPE = {
   CITY: 1
 };
 
-// ログ出力
+//ログ
 function log(msg) {
-  const el = document.getElementById("log");
-  el.textContent += msg + "\n";
-  el.scrollTop = el.scrollHeight;
+    const logBox = document.getElementById("log");
+    const div = document.createElement("div");
+    div.textContent = msg;
+    logBox.appendChild(div);
+    logBox.scrollTop = logBox.scrollHeight;
 }
+
 
 // ランダム
 function randInt(min, max) {
@@ -650,6 +653,22 @@ else if (t === "BUILDING") {
       TILE_SIZE
     );
   });
+  // =======================
+// UI更新
+// =======================
+document.getElementById("player-hp").style.width =
+    (player.hp / player.maxHp * 200) + "px";
+
+document.getElementById("dragon-bar").style.width =
+    (player.dragonPercent * 2) + "px";
+
+if (currentTarget) {
+    document.getElementById("enemy-hp").style.width =
+        (currentTarget.hp / currentTarget.maxHp * 200) + "px";
+} else {
+    document.getElementById("enemy-hp").style.width = "0px";
+}
+
 }
 
 // =======================
