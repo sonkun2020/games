@@ -1330,3 +1330,48 @@ function updateStatusBox() {
     `;
 }
 setInterval(updateStatusBox, 300);
+// =======================
+// セーブ
+// =======================
+function saveGame() {
+    const data = {
+        weaponId: player.weaponId,
+        hp: player.hp,
+        maxHp: player.maxHp,
+        atk: player.atk,
+        def: player.def,
+        dragonPercent: player.dragonPercent,
+        money: player.money || 0,
+        soundOn: soundOn
+    };
+
+    localStorage.setItem("myGameSave", JSON.stringify(data));
+    log("ゲームをセーブしました！");
+}
+// =======================
+// ロード
+// =======================
+function loadGame() {
+    const raw = localStorage.getItem("myGameSave");
+    if (!raw) {
+        log("セーブデータがありません");
+        return;
+    }
+
+    const data = JSON.parse(raw);
+
+    player.weaponId = data.weaponId;
+    player.hp = data.hp;
+    player.maxHp = data.maxHp;
+    player.atk = data.atk;
+    player.def = data.def;
+    player.dragonPercent = data.dragonPercent;
+    player.money = data.money || 0;
+
+    soundOn = data.soundOn;
+    const sounds = document.querySelectorAll("audio");
+    sounds.forEach(se => se.volume = soundOn ? 1 : 0);
+
+    log("セーブデータをロードしました！");
+}
+
