@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="ui">
+  <div id="ui-root">
     <header id="top-bar">
       <div id="player-info">
         Lv: <span id="player-level">1</span>
@@ -17,22 +17,31 @@
       </div>
       <div id="notice">
         <strong>お知らせ：</strong>
-        <span id="notice-text">ようこそ。ゲーム仕様はすべて完成しています。</span>
+        <span id="notice-text">ゲーム仕様はすべて反映済みです。</span>
       </div>
     </header>
 
     <main id="main">
-      <section id="status-panel">
+      <section id="left-panel">
+        <h2>マップ</h2>
+        <canvas id="game-canvas" width="640" height="480"></canvas>
+        <div class="hint">
+          移動：WASD ／ 攻撃：J（通常） ／ スキル1：K
+        </div>
+      </section>
+
+      <section id="center-panel">
         <h2>プレイヤー情報</h2>
         <pre id="player-status"></pre>
+
+        <h2>装備武器</h2>
+        <div id="weapon-info"></div>
+
+        <h2>敵情報</h2>
+        <pre id="enemy-status"></pre>
       </section>
 
-      <section id="weapon-panel">
-        <h2>武器一覧</h2>
-        <div id="weapon-list"></div>
-      </section>
-
-      <section id="log-panel">
+      <section id="right-panel">
         <h2>ログ</h2>
         <div id="log"></div>
       </section>
