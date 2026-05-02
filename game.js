@@ -1,17 +1,40 @@
-// ====== データ定義 ======
+// =======================
+//  基本定数・ユーティリティ
+// =======================
 
-// レアリティ・ランク
-const WeaponRank = ["common", "B", "A", "S", "SSS", "X"];
+const TILE_SIZE = 32;
+const MAP_COLS = 20;
+const MAP_ROWS = 15;
 
-// 武器テンプレ
-const weapons = [
-  // 拳はランクなし（素手扱い）
-  {
+// 草原：薄緑 ／ 街：薄こげ茶
+const TILE_TYPE = {
+  GRASS: 0,
+  CITY: 1
+};
+
+// ログ出力
+function log(msg) {
+  const el = document.getElementById("log");
+  el.textContent += msg + "\n";
+  el.scrollTop = el.scrollHeight;
+}
+
+// ランダム
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// =======================
+//  武器・スキルデータ
+// =======================
+
+const weapons = {
+  fist: {
     id: "fist",
     name: "拳",
     type: "拳",
     rank: null,
-    base: { range: "周囲1m", atkSpeed: 0.2 },
+    base: { range: 1, atkSpeed: 0.2 },
     effect: "0.5mノックバック",
     skills: [
       { name: "パンチ", desc: "3mノックバック", ct: 3 },
@@ -23,14 +46,12 @@ const weapons = [
       }
     ]
   },
-
-  // 剣（ランク別補正）
-  {
+  sword: {
     id: "sword",
     name: "剣",
     type: "剣",
-    rank: "A", // 表示用の例
-    base: { range: "前方1.5m（左右80°）", atkSpeed: 0.4 },
+    rank: "A",
+    base: { range: 1.5, atkSpeed: 0.4 },
     effect: "防御値5%減少",
     skills: [
       {
@@ -50,14 +71,12 @@ const weapons = [
       }
     ]
   },
-
-  // 槍
-  {
+  spear: {
     id: "spear",
     name: "槍",
     type: "槍",
     rank: "A",
-    base: { range: "前方3m（左右10°）", atkSpeed: 0.3 },
+    base: { range: 3, atkSpeed: 0.3 },
     effect: "1mノックバック",
     skills: [
       { name: "ノックバック棒", desc: "5mノックバック", ct: 8 },
@@ -73,14 +92,12 @@ const weapons = [
       }
     ]
   },
-
-  // 斧
-  {
+  axe: {
     id: "axe",
     name: "斧",
     type: "斧",
     rank: "A",
-    base: { range: "前方2m（左右60°）", atkSpeed: 0.6 },
+    base: { range: 2, atkSpeed: 0.6 },
     effect: "0.7mノックバック",
     skills: [
       {
@@ -99,157 +116,448 @@ const weapons = [
         ct: 8
       }
     ]
-  },
-
-  // Xランク剣
-  {
-    id: "x_sword",
-    name: "Xランク剣",
-    type: "剣",
-    rank: "X",
-    base: { range: "前方1.5m（左右80°）", atkSpeed: 0.4, bonusAtk: 200 },
-    effect: "炎上＋凍結付与",
-    skills: [
-      {
-        name: "極の一閃",
-        desc: "前方5m移動＋攻撃力140%ダメージ",
-        ct: 3
-      },
-      {
-        name: "打ち上げ花火",
-        desc: "行動不能＋打ち上げ＋通常3回＋落下時凍結",
-        ct: 14
-      },
-      {
-        name: "極道",
-        desc: "回復阻害＋凍結付与＋自身攻撃力1.2倍",
-        ct: 10
-      },
-      {
-        name: "終焉",
-        desc: "半径7mに攻撃力200%の剣を放つ",
-        ct: 20
-      }
-    ]
-  },
-
-  // Dragon sword
-  {
-    id: "dragon_sword",
-    name: "Dragon sword",
-    type: "剣",
-    rank: "SSS",
-    base: { range: "前方1.5m（左右80°）", atkSpeed: 0.4 },
-    effect: "炎上＋回復阻害＋ドラゴン％システム",
-    skills: [
-      {
-        name: "異常付与",
-        desc: "直線3m攻撃＋炎上＋回復阻害（異常回復貫通）",
-        ct: 8
-      },
-      {
-        name: "獄炎斬",
-        desc: "1秒行動不能＋ドラゴン％を3貯める",
-        ct: 10
-      },
-      {
-        name: "全智のドラゴン",
-        desc: "1人引き寄せ＋行動不能＋通常3回＋10mノックバック",
-        ct: 25
-      },
-      {
-        name: "炎鬼",
-        desc: "攻撃力1.2倍＋ドラゴン％5貯める＋他スキルCT-1秒",
-        ct: 15
-      }
-    ],
-    dragonGauge: {
-      max: 100,
-      desc:
-        "100で発動：全スキルCT-3秒＋周囲15mの敵を1秒行動不能。使用後ゲージ0。"
-    }
   }
-];
-
-// プレイヤー状態（簡易）
-const player = {
-  level: 1,
-  gold: 0,
-  weaponId: "fist"
 };
 
-// ====== UI更新 ======
+// =======================
+//  プレイヤー・敵・状態
+// =======================
 
-function log(msg) {
-  const logEl = document.getElementById("log");
-  logEl.textContent += msg + "\n";
-  logEl.scrollTop = logEl.scrollHeight;
+const player = {
+  x: 5,
+  y: 5,
+  hp: 1000,
+  maxHp: 1000,
+  atk: 100,
+  def: 50,
+  level: 1,
+  gold: 0,
+  weaponId: "sword",
+  moveSpeed: 2, // 2m/s 相当（ここでは1タイル=1m扱い）
+  ccUntil: 0
+};
+
+const enemies = [];
+
+const enemyTemplate = {
+  normal: {
+    name: "フィールド敵",
+    hp: 300,
+    atk: 50,
+    range: 1.5,
+    speed: 1.5
+  },
+  raid: {
+    name: "レイドボス Rest",
+    hp: 5000,
+    atk: 200,
+    range: 3,
+    speed: 1,
+    attackInterval: 0.4
+  },
+  dragon: {
+    name: "Strong dragon",
+    hp: 8000,
+    atk: 250,
+    range: 4,
+    speed: 1.2
+  }
+};
+
+// =======================
+//  マップ生成
+// =======================
+
+let map = [];
+
+function generateMap() {
+  map = [];
+  for (let y = 0; y < MAP_ROWS; y++) {
+    const row = [];
+    for (let x = 0; x < MAP_COLS; x++) {
+      // 左側：草原 ／ 右側：街
+      if (x < MAP_COLS / 2) {
+        row.push(TILE_TYPE.GRASS);
+      } else {
+        row.push(TILE_TYPE.CITY);
+      }
+    }
+    map.push(row);
+  }
 }
 
-function renderPlayer() {
+// =======================
+//  敵スポーン
+// =======================
+
+function spawnEnemy(type, x, y) {
+  const t = enemyTemplate[type];
+  if (!t) return;
+  enemies.push({
+    type,
+    name: t.name,
+    x,
+    y,
+    hp: t.hp,
+    maxHp: t.hp,
+    atk: t.atk,
+    range: t.range,
+    speed: t.speed,
+    lastAttack: 0
+  });
+}
+
+function spawnInitialEnemies() {
+  // フィールド敵を数体
+  for (let i = 0; i < 5; i++) {
+    spawnEnemy("normal", randInt(2, MAP_COLS - 2), randInt(2, MAP_ROWS - 2));
+  }
+  // レイドボス
+  spawnEnemy("raid", MAP_COLS - 4, 3);
+  // ドラゴン
+  spawnEnemy("dragon", MAP_COLS - 4, MAP_ROWS - 4);
+}
+
+// =======================
+//  入力
+// =======================
+
+const keys = {};
+window.addEventListener("keydown", e => {
+  keys[e.key.toLowerCase()] = true;
+});
+window.addEventListener("keyup", e => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+// =======================
+//  戦闘・AIロジック
+// =======================
+
+function distance(a, b) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+// CC中かどうか
+function isCC(now, ccUntil) {
+  return now < ccUntil;
+}
+
+// プレイヤー攻撃（簡易：通常攻撃＋スキル1）
+function playerAttack(now) {
+  const w = weapons[player.weaponId];
+  if (!w) return;
+
+  // 通常攻撃（J）
+  if (keys["j"]) {
+    const target = enemies.find(e => distance(player, e) <= w.base.range);
+    if (target) {
+      const dmg = Math.max(0, player.atk - 0); // 防御簡略
+      target.hp -= dmg;
+      log(`プレイヤーの通常攻撃！ ${target.name} に ${dmg} ダメージ`);
+      if (target.hp <= 0) {
+        onEnemyDead(target);
+      }
+    }
+  }
+
+  // スキル1（K） → 仕様に合わせて「スキル1」を使うイメージ
+  if (keys["k"]) {
+    const skill = w.skills[0];
+    if (!skill._nextUse || now >= skill._nextUse) {
+      const target = enemies.find(e => distance(player, e) <= w.base.range + 1);
+      if (target) {
+        skill._nextUse = now + skill.ct * 1000;
+        const dmg = Math.max(0, player.atk * 1.4 - 0); // ざっくり倍率
+        target.hp -= dmg;
+        log(`スキル「${skill.name}」発動！ ${target.name} に ${dmg} ダメージ`);
+        if (target.hp <= 0) {
+          onEnemyDead(target);
+        }
+      }
+    }
+  }
+}
+
+// 敵死亡時
+function onEnemyDead(enemy) {
+  const idx = enemies.indexOf(enemy);
+  if (idx >= 0) enemies.splice(idx, 1);
+  log(`${enemy.name} を倒した！`);
+
+  // ドロップ（簡略版）
+  if (enemy.type === "normal") {
+    // 通常素材50%（仕様通り）
+    if (Math.random() < 0.5) {
+      player.gold += 1;
+      log("通常素材を売却して 1ドラ 入手（簡略処理）");
+    }
+  } else if (enemy.type === "raid" || enemy.type === "dragon") {
+    // 通常素材70%
+    if (Math.random() < 0.7) {
+      player.gold += 1;
+      log("ボスから通常素材ドロップ → 売却で 1ドラ 入手（簡略処理）");
+    }
+  }
+}
+
+// 敵AI
+function updateEnemies(dt, now) {
+  enemies.forEach(e => {
+    const dist = distance(e, player);
+
+    // レイドボス：攻撃頻度0.4秒
+    if (e.type === "raid") {
+      if (dist <= e.range) {
+        if (!e.lastAttack || now - e.lastAttack >= 400) {
+          e.lastAttack = now;
+          const dmg = e.atk;
+          player.hp -= dmg;
+          log(`レイドボスの攻撃！ プレイヤーに ${dmg} ダメージ`);
+        }
+      } else {
+        // 追いかける
+        chase(e, player, dt);
+      }
+      return;
+    }
+
+    // ドラゴン：ランダム行動
+    if (e.type === "dragon") {
+      if (!e._nextAction || now >= e._nextAction) {
+        e._nextAction = now + randInt(800, 1500);
+        const action = randInt(0, 2);
+        if (action === 0 && dist <= e.range) {
+          const dmg = e.atk;
+          player.hp -= dmg;
+          log(`ドラゴンの火炎攻撃！ プレイヤーに ${dmg} ダメージ`);
+        } else {
+          chase(e, player, dt);
+        }
+      } else {
+        // たまに追いかける
+        if (dist > e.range) chase(e, player, dt);
+      }
+      return;
+    }
+
+    // 通常敵：追いかけて、範囲に入ったら攻撃
+    if (dist <= e.range) {
+      if (!e.lastAttack || now - e.lastAttack >= 800) {
+        e.lastAttack = now;
+        const dmg = e.atk;
+        player.hp -= dmg;
+        log(`${e.name} の攻撃！ プレイヤーに ${dmg} ダメージ`);
+      }
+    } else {
+      chase(e, player, dt);
+    }
+  });
+}
+
+// 追尾
+function chase(e, target, dt) {
+  const dx = target.x - e.x;
+  const dy = target.y - e.y;
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const vx = (dx / len) * e.speed * (dt / 1000);
+  const vy = (dy / len) * e.speed * (dt / 1000);
+  e.x += vx;
+  e.y += vy;
+}
+
+// =======================
+//  プレイヤー移動
+// =======================
+
+function updatePlayer(dt, now) {
+  if (isCC(now, player.ccUntil)) return;
+
+  let mx = 0;
+  let my = 0;
+  if (keys["w"]) my -= 1;
+  if (keys["s"]) my += 1;
+  if (keys["a"]) mx -= 1;
+  if (keys["d"]) mx += 1;
+
+  if (mx !== 0 || my !== 0) {
+    const len = Math.sqrt(mx * mx + my * my);
+    mx /= len;
+    my /= len;
+    const vx = mx * player.moveSpeed * (dt / 1000);
+    const vy = my * player.moveSpeed * (dt / 1000);
+    player.x = Math.max(0, Math.min(MAP_COLS - 1, player.x + vx));
+    player.y = Math.max(0, Math.min(MAP_ROWS - 1, player.y + vy));
+  }
+}
+
+// =======================
+//  描画
+// =======================
+
+let canvas, ctx;
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // マップ
+  for (let y = 0; y < MAP_ROWS; y++) {
+    for (let x = 0; x < MAP_COLS; x++) {
+      const t = map[y][x];
+      if (t === TILE_TYPE.GRASS) {
+        ctx.fillStyle = "#335533"; // 薄緑
+      } else {
+        ctx.fillStyle = "#5a3b2e"; // 薄こげ茶
+      }
+      ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    }
+  }
+
+  // プレイヤー
+  ctx.fillStyle = "#00aaff";
+  ctx.fillRect(
+    player.x * TILE_SIZE - TILE_SIZE / 2,
+    player.y * TILE_SIZE - TILE_SIZE / 2,
+    TILE_SIZE,
+    TILE_SIZE
+  );
+
+  // 敵
+  enemies.forEach(e => {
+    if (e.type === "raid") ctx.fillStyle = "#ff4444";
+    else if (e.type === "dragon") ctx.fillStyle = "#ff8800";
+    else ctx.fillStyle = "#aa0000";
+
+    ctx.fillRect(
+      e.x * TILE_SIZE - TILE_SIZE / 2,
+      e.y * TILE_SIZE - TILE_SIZE / 2,
+      TILE_SIZE,
+      TILE_SIZE
+    );
+  });
+}
+
+// =======================
+//  UI更新
+// =======================
+
+function renderPlayerUI() {
   document.getElementById("player-level").textContent = player.level;
   document.getElementById("player-gold").textContent = player.gold;
 
   const statusEl = document.getElementById("player-status");
-  const weapon = weapons.find(w => w.id === player.weaponId);
   statusEl.textContent =
-    `装備武器: ${weapon ? weapon.name : "なし"}\n` +
-    `ランク: ${weapon && weapon.rank ? weapon.rank : "なし"}\n`;
+    `HP: ${player.hp} / ${player.maxHp}\n` +
+    `攻撃力: ${player.atk}\n` +
+    `防御値: ${player.def}\n` +
+    `位置: (${player.x.toFixed(1)}, ${player.y.toFixed(1)})\n` +
+    `装備武器: ${weapons[player.weaponId].name}\n`;
+
+  const w = weapons[player.weaponId];
+  const wEl = document.getElementById("weapon-info");
+  wEl.innerHTML = `
+    <div>種別: ${w.type} ／ ランク: ${w.rank || "なし"}</div>
+    <div>射程: ${w.base.range}m ／ 攻撃速度: ${w.base.atkSpeed}s</div>
+    <div>効果: ${w.effect}</div>
+    <div>スキル:</div>
+    <ul>
+      ${w.skills
+        .map(
+          s =>
+            `<li class="skill">${s.name} [CT:${s.ct}s] - ${s.desc}</li>`
+        )
+        .join("")}
+    </ul>
+  `;
+
+  const enemyEl = document.getElementById("enemy-status");
+  if (enemies.length === 0) {
+    enemyEl.textContent = "敵はいません。";
+  } else {
+    enemyEl.textContent = enemies
+      .map(
+        e =>
+          `${e.name} HP:${e.hp}/${e.maxHp} 位置:(${e.x.toFixed(
+            1
+          )},${e.y.toFixed(1)})`
+      )
+      .join("\n");
+  }
 }
 
-function renderWeapons() {
-  const container = document.getElementById("weapon-list");
-  container.innerHTML = "";
+// =======================
+//  オートセーブ（簡易）
+// =======================
 
-  weapons.forEach(w => {
-    const div = document.createElement("div");
-    div.className = "weapon-card";
-
-    const title = document.createElement("div");
-    title.className = "weapon-name";
-    title.textContent = `${w.name} ${w.rank ? `(${w.rank})` : ""}`;
-    div.appendChild(title);
-
-    const base = document.createElement("div");
-    base.textContent = `種別: ${w.type} ／ 射程: ${w.base.range} ／ 攻撃速度: ${w.base.atkSpeed}s`;
-    div.appendChild(base);
-
-    if (w.base.bonusAtk) {
-      const bonus = document.createElement("div");
-      bonus.textContent = `攻撃補正: +${w.base.bonusAtk}`;
-      div.appendChild(bonus);
-    }
-
-    const eff = document.createElement("div");
-    eff.textContent = `効果: ${w.effect}`;
-    div.appendChild(eff);
-
-    const skillTitle = document.createElement("div");
-    skillTitle.textContent = "スキル:";
-    div.appendChild(skillTitle);
-
-    const ul = document.createElement("ul");
-    w.skills.forEach(s => {
-      const li = document.createElement("li");
-      li.textContent = `${s.name} [CT:${s.ct}s] - ${s.desc}`;
-      ul.appendChild(li);
-    });
-    div.appendChild(ul);
-
-    if (w.dragonGauge) {
-      const dg = document.createElement("div");
-      dg.textContent = `ドラゴン％: ${w.dragonGauge.desc}`;
-      div.appendChild(dg);
-    }
-
-    container.appendChild(div);
-  });
+function saveGame() {
+  const data = {
+    player
+  };
+  localStorage.setItem("raid_dragon_save", JSON.stringify(data));
 }
 
-// ====== 初期化 ======
+function loadGame() {
+  const raw = localStorage.getItem("raid_dragon_save");
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    Object.assign(player, data.player);
+    log("セーブデータを読み込みました。");
+  } catch (e) {
+    console.warn(e);
+  }
+}
+
+// =======================
+//  メインループ
+// =======================
+
+let lastTime = 0;
+let autoSaveTimer = 0;
+
+function loop(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  const dt = timestamp - lastTime;
+  lastTime = timestamp;
+
+  const now = performance.now();
+
+  updatePlayer(dt, now);
+  playerAttack(now);
+  updateEnemies(dt, now);
+  draw();
+  renderPlayerUI();
+
+  autoSaveTimer += dt;
+  if (autoSaveTimer >= 30000) {
+    autoSaveTimer = 0;
+    saveGame();
+    log("オートセーブしました。");
+  }
+
+  if (player.hp <= 0) {
+    log("プレイヤーは倒れた…（リロードで再開）");
+    return;
+  }
+
+  requestAnimationFrame(loop);
+}
+
+// =======================
+//  初期化
+// =======================
+
 window.addEventListener("load", () => {
-  renderPlayer();
-  renderWeapons();
-  log("ゲーム仕様データを読み込みました。");
-  log("ここから戦闘ロジックやマップ、敵AIを追加していける状態です。");
+  canvas = document.getElementById("game-canvas");
+  ctx = canvas.getContext("2d");
+
+  generateMap();
+  loadGame();
+  spawnInitialEnemies();
+  renderPlayerUI();
+  log("ゲーム開始。WASDで移動、Jで攻撃、Kでスキル1。");
+
+  requestAnimationFrame(loop);
 });
