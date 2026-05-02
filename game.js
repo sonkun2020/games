@@ -135,6 +135,14 @@ const player = {
   weaponId: "sword",
   moveSpeed: 2, // 2m/s 相当（ここでは1タイル=1m扱い）
   ccUntil: 0
+  status: {
+    freezeUntil: 0,   // 凍結
+    stunUntil: 0,     // 行動不能
+    burnUntil: 0,     // 炎上
+    healBlockUntil: 0 // 回復阻害
+},
+knockback: { x: 0, y: 0, until: 0 }
+
 };
 
 const enemies = [];
@@ -204,6 +212,14 @@ function spawnEnemy(type, x, y) {
     range: t.range,
     speed: t.speed,
     lastAttack: 0
+    status: {
+    freezeUntil: 0,   // 凍結
+    stunUntil: 0,     // 行動不能
+    burnUntil: 0,     // 炎上
+    healBlockUntil: 0 // 回復阻害
+},
+knockback: { x: 0, y: 0, until: 0 }
+
   });
 }
 
@@ -310,6 +326,9 @@ if (keys["3"]) {
         }
     }
 }
+  applyStatus(target, "stun", 700); // 0.7秒行動不能
+applyStatus(target, "burn", 5000); // 5秒炎上
+
 }
 
 // 敵死亡時
@@ -592,3 +611,19 @@ window.addEventListener("load", () => {
 
   requestAnimationFrame(loop);
 });
+function applyStatus(target, type, durationMs) {
+    const now = performance.now();
+
+    if (type === "freeze") {
+        target.status.freezeUntil = now + durationMs;
+    }
+    if (type === "stun") {
+        target.status.stunUntil = now + durationMs;
+    }
+    if (type === "burn") {
+        target.status.burnUntil = now + durationMs;
+    }
+    if (type === "healBlock") {
+        target.status.healBlockUntil = now + durationMs;
+    }
+}
